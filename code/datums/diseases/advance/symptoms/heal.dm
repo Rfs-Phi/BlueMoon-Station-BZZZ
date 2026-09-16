@@ -44,22 +44,6 @@
 /datum/symptom/heal/proc/passive_message_condition(mob/living/M)
 	return TRUE
 
-
-/datum/symptom/heal/starlight
-	name = "Starlight Condensation"
-	desc = "The virus reacts to direct starlight, producing regenerative chemicals. Works best against toxin-based damage."
-	stealth = -1
-	resistance = -2
-	stage_speed = 0
-	transmittable = 1
-	level = 6
-	passive_message = "<span class='notice'>You miss the feeling of starlight on your skin.</span>"
-	var/nearspace_penalty = 0
-	threshold_desc = list(
-		"Stage Speed 6" = "Increases healing speed.",
-		"Transmission 6" = "Removes penalty for only being close to space."
-	)
-
 /datum/symptom/heal/starlight
 	name = "Starlight Condensation"
 	desc = "The virus reacts to direct starlight, producing regenerative chemicals. Works best against toxin-based damage."
@@ -97,7 +81,7 @@
 	if(M.getToxLoss() && prob(5))
 		to_chat(M, "<span class='notice'>Your skin tingles as the starlight seems to heal you.</span>")
 
-	M.adjustToxLoss(-(5 * heal_amt), forced = TRUE) //most effective on toxins
+	M.adjustToxLoss(-(8 * heal_amt), forced = TRUE) //most effective on toxins
 
 	var/list/parts = M.get_damaged_bodyparts(1,1)
 
