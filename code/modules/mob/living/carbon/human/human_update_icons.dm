@@ -57,6 +57,7 @@ There are several things that need to be remembered:
 /mob/living/carbon/human/update_hair()
 	if(!HAS_TRAIT(src, TRAIT_HUMAN_NO_RENDER))
 		dna?.species?.handle_hair(src)
+		update_body_hardlight()
 
 ///Глубина отсрочки пересборки мутантных частей тела. Пока больше нуля,
 ///update_mutant_bodyparts() только помечает заявку. Полная перерисовка
@@ -564,12 +565,11 @@ There are several things that need to be remembered:
 	if(!HAS_TRAIT(src, TRAIT_HUMAN_NO_RENDER))
 		remove_overlay(SHOES_LAYER)
 
-		if(get_num_legs(FALSE) <2)
-			return
-
 		if(client && hud_used)
 			var/atom/movable/screen/inventory/inv = hud_used.inv_slots[TOBITSHIFT(ITEM_SLOT_FEET) + 1]
 			inv.update_icon()
+		if(get_num_legs(FALSE) < 2)
+			return
 
 		if(dna.species.mutant_bodyparts["taur"])
 			var/datum/sprite_accessory/taur/T = GLOB.taur_list[dna.features["taur"]]
@@ -702,6 +702,8 @@ There are several things that need to be remembered:
 		var/datum/sprite_accessory/taur/T
 		if(dna.species.mutant_bodyparts["taur"])
 			T = GLOB.taur_list[dna.features["taur"]]
+		if(HAS_TRAIT(src, TRAIT_NAGA_ANATOMY) && !get_bodypart(BODY_ZONE_L_LEG) && T?.severed_body_state)
+			T = null
 
 		if(B.mutantrace_variation)
 			if(T?.taur_mode)
@@ -770,12 +772,15 @@ There are several things that need to be remembered:
 			var/datum/sprite_accessory/taur/T
 			if(dna.species.mutant_bodyparts["taur"])
 				T = GLOB.taur_list[dna.features["taur"]]
+			var/missing_naga_tail = HAS_TRAIT(src, TRAIT_NAGA_ANATOMY) && !get_bodypart(BODY_ZONE_L_LEG) && T?.severed_body_state
+			if(missing_naga_tail)
+				T = null
 
 			if(S.mutantrace_variation)
 
 				var/taur_builded = FALSE
 
-				if(istype(S, /obj/item/clothing/suit))
+				if(T && istype(S, /obj/item/clothing/suit))
 					var/obj/item/clothing/suit/suit = S
 					if(!isemptylist(suit.taur_types_icon_whitelist))
 						for(var/special_taur_icon in suit.taur_types_icon_whitelist)
@@ -814,7 +819,7 @@ There are several things that need to be remembered:
 						worn_icon = S.anthro_mob_worn_overlay || 'icons/mob/clothing/suit_digi.dmi'
 						variation_flag |= STYLE_DIGITIGRADE
 
-			overlays_standing[SUIT_LAYER] = S.build_worn_icon(SUIT_LAYER, worn_icon, FALSE, NO_FEMALE_UNIFORM, worn_state, variation_flag, FALSE)
+			overlays_standing[SUIT_LAYER] = S.build_worn_icon(SUIT_LAYER, worn_icon, FALSE, NO_FEMALE_UNIFORM, worn_state, variation_flag, FALSE, missing_naga_tail ? "taur_mask_naga" : null)
 			var/mutable_appearance/suit_overlay = overlays_standing[SUIT_LAYER]
 			if(OFFSET_SUIT in dna.species.offset_features)
 				suit_overlay.pixel_x += dna.species.offset_features[OFFSET_SUIT][1]
@@ -1091,6 +1096,10 @@ use_mob_overlay_icon: if FALSE, it will always use the default_icon_file even if
 			. += "-[BP.dmg_overlay_type]"
 		if(BP.body_markings_list?.len)
 			. += "-[safe_json_encode(BP.body_markings_list)]"
+		// Импланты рисуются на конечности: без них тело с трубкой и без неё делили одну запись кэша
+		for(var/datum/bodypart_overlay/overlay as anything in BP.bodypart_overlays)
+			for(var/extra_key in overlay.icon_render_key(BP))
+				. += "-[overlay.type]-[extra_key]"
 		if(BP.icon)
 			. += "-[BP.icon]"
 		else
